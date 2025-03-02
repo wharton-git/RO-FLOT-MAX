@@ -47,6 +47,7 @@ def main():
     for u, v, data in G.edges(data=True):
         print(f"{u} -> {v} : capacité = {data['capacity']}")
 
+    # Calculer le flot maximal
     flow_value, flow_dict = nx.maximum_flow(G, 'S', 'T')
 
     print(f"\nFlot maximal: {flow_value}")
@@ -56,16 +57,26 @@ def main():
             if flow > 0:
                 print(f"{u} -> {v}: {flow}")
 
-    pos = nx.spring_layout(G)  # Positionnement des nœuds
+    # Définir des positions fixes pour les nœuds
+    pos = {
+        'S': (0, 1),  # Source en haut à gauche
+        'A': (1, 2),  # Dépôt A
+        'B': (1, 1),  # Dépôt B
+        'C': (1, 0),  # Dépôt C
+        'D': (2, 2),  # Destination D
+        'E': (2, 1),  # Destination E
+        'F': (2, 0),  # Destination F
+        'G': (2, -1),  # Destination G
+        'T': (4, 1),  # Puits en haut à droite
+    }
+
+    # Dessiner le graphe avec les positions fixes
     nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=2000, font_size=10, font_weight='bold')
 
+    # Ajouter les labels des capacités sur les arêtes
     edge_labels = nx.get_edge_attributes(G, 'capacity')
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
 
-    # Sauvegarder ou afficher la figure
-    # try:
-    #     plt.show()  # Afficher la figure dans une fenêtre
-    # except:
     plt.savefig("graph.png")  # Sauvegarder la figure si l'affichage échoue
     print("Le graphe a été sauvegardé sous 'graph.png'")
 
