@@ -72,6 +72,34 @@ class InputDialog(QDialog):
         cols = [x.strip() for x in self.col_input.text().split(",") if x.strip()]
         return rows, cols
 
+class ValueAssignmentDialog(QDialog):
+    def __init__(self, row_labels, col_labels, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Assigner les valeurs S et T")
+
+        layout = QFormLayout()
+        self.values = {}
+
+        # Créer des champs de texte pour chaque valeur "S-ligne" et "colonne-T"
+        for row in row_labels:
+            self.values[f"S-{row}"] = QLineEdit(self)
+            layout.addRow(f"Valeur S-{row} :", self.values[f"S-{row}"])
+
+        for col in col_labels:
+            self.values[f"{col}-T"] = QLineEdit(self)
+            layout.addRow(f"Valeur {col}-T :", self.values[f"{col}-T"])
+
+        self.ok_button = QPushButton("OK", self)
+        self.ok_button.clicked.connect(self.accept)
+        layout.addWidget(self.ok_button)
+
+        self.setLayout(layout)
+
+    def get_values(self):
+        """Retourne un dictionnaire avec les valeurs des champs."""
+        return {key: int(value.text()) for key, value in self.values.items() if value.text().strip().isdigit()}
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -113,7 +141,8 @@ class MainWindow(QMainWindow):
         # Maximiser la fenêtre
         self.showMaximized()
 
-    def setup_table(self, row_labels, col_labels):
+    
+    def setup_table(self, row_labels, col_labels, values=None):
         """Initialise ou met à jour le tableau et le graphique."""
         self.row_labels = row_labels
         self.col_labels = col_labels
@@ -138,24 +167,34 @@ class MainWindow(QMainWindow):
         self.plot_graph()
 
         # Créer la variable avec les tuples comme demandé
-        self.table_info = self.get_table_info()
+        self.table_info = self.get_table_info(values)
 
         # Afficher les informations dans le QTextEdit
         self.update_table_info_display()
 
-    def get_table_info(self):
+    def get_table_info(self, values=None):
         """Retourne les informations sous la forme d'une liste de tuples, y compris les valeurs fictives S et T."""
         table_info = []
-        for i, row in enumerate(self.model._data):
-            # Ajouter la valeur fictive "S" pour chaque ligne
-            table_info.append(("S", self.model.row_labels[i], 0))
-            for j, value in enumerate(row):
-                # Ajouter la valeur de la table avec les indices de ligne et colonne
-                table_info.append((self.model.row_labels[i], self.model.col_labels[j], value))
-            # Ajouter la valeur fictive "T" pour chaque colonne
-            table_info.append((self.model.col_labels[j], "T", 0))
+        if values:  # Si des valeurs ont été assignées, les utiliser
+            for i, row in enumerate(self.model._data):
+                # Ajouter la valeur fictive "S" pour chaque ligne
+                table_info.append(("S", self.model.row_labels[i], values.get(f"S-{self.model.row_labels[i]}", 0)))
+                for j, value in enumerate(row):
+                    # Ajouter la valeur de la table avec les indices de ligne et colonne
+                    table_info.append((self.model.row_labels[i], self.model.col_labels[j], value))
+                # Ajouter la valeur fictive "T" pour chaque colonne
+                table_info.append((self.model.col_labels[j], "T", values.get(f"{self.model.col_labels[j]}-T", 0)))
+        else:
+            for i, row in enumerate(self.model._data):
+                # Ajouter la valeur fictive "S" pour chaque ligne
+                table_info.append(("S", self.model.row_labels[i], 0))
+                for j, value in enumerate(row):
+                    # Ajouter la valeur de la table avec les indices de ligne et colonne
+                    table_info.append((self.model.row_labels[i], self.model.col_labels[j], value))
+                # Ajouter la valeur fictive "T" pour chaque colonne
+                table_info.append((self.model.col_labels[j], "T", 0))
         return table_info
-
+    
     def update_table_info_display(self):
         """Met à jour l'affichage des informations de la table avec les valeurs fictives."""
         table_info_text = "\n".join([f"({r}, {c}, {v})" for r, c, v in self.table_info])
@@ -186,12 +225,16 @@ class MainWindow(QMainWindow):
         self.update_table_info_display()
 
     def open_config_dialog(self):
-        """Ouvre une fenêtre pop-up pour configurer le tableau."""
-        dialog = InputDialog(self)
-        if dialog.exec_():
-            rows, cols = dialog.get_inputs()
-            if rows and cols:  # Vérifie que les entrées ne sont pas vides
-                self.setup_table(rows, cols)
+            """Ouvre une fenêtre pop-up pour configurer le tableau."""
+            dialog = InputDialog(self)
+            if dialog.exec_():
+                rows, cols = dialog.get_inputs()
+                if rows and cols:  # Vérifie que les entrées ne sont pas vides
+                    # Ouvre le dialogue pour assigner les valeurs S et T après la configuration du tableau
+                    value_dialog = ValueAssignmentDialog(rows, cols, self)
+                    if value_dialog.exec_():
+                        values = value_dialog.get_values()
+                        self.setup_table(rows, cols, values)
 
 
 if __name__ == '__main__':
