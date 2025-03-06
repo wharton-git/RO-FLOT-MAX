@@ -1,10 +1,11 @@
 import sys
 import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSplitter, QTableView, QVBoxLayout, 
-                             QWidget, QPushButton, QDialog, QLineEdit, QFormLayout)
+                            QWidget, QPushButton, QDialog, QLineEdit, QFormLayout, QTextEdit)
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import networkx as netx
 
 class MyTableModel(QAbstractTableModel):
     dataChanged = pyqtSignal(QModelIndex, QModelIndex, list)
@@ -29,7 +30,8 @@ class MyTableModel(QAbstractTableModel):
     def setData(self, index, value, role):
         if role == Qt.EditRole:
             try:
-                self._data[index.row()][index.column()] = float(value)
+                # Convertir la valeur en entier
+                self._data[index.row()][index.column()] = int(value)
                 self.dataChanged.emit(index, index, [Qt.DisplayRole])
                 return True
             except ValueError:
@@ -92,12 +94,20 @@ class MainWindow(QMainWindow):
         self.config_button = QPushButton("Configurer le tableau", self)
         self.config_button.clicked.connect(self.open_config_dialog)
 
-        # Initialisation du tableau avec des valeurs 0
+        # Création du widget pour afficher les informations de la table
+        self.table_info_display = QTextEdit(self)
+        self.table_info_display.setReadOnly(True)  # Rendre le QTextEdit non éditable
+
+        # Initialisation du tableau avec des valeurs par défaut
         self.setup_table(["A", "B", "C"], ["X", "Y"])
 
         # Ajout des widgets
         self.layout.addWidget(splitter)
         self.layout.addWidget(self.config_button)
+
+        # Affichage des informations de la table à côté
+        self.layout.addWidget(self.table_info_display)
+
         self.setCentralWidget(central_widget)
 
         # Maximiser la fenêtre
@@ -108,8 +118,8 @@ class MainWindow(QMainWindow):
         self.row_labels = row_labels
         self.col_labels = col_labels
 
-        # Création d'un tableau rempli de 0
-        data = np.zeros((len(row_labels), len(col_labels))).tolist()
+        # Initialisation du tableau avec des valeurs à 0
+        data = np.zeros((len(row_labels), len(col_labels)), dtype=int).tolist()
         self.model = MyTableModel(data, row_labels, col_labels)
 
         # Création du QTableView
@@ -126,6 +136,30 @@ class MainWindow(QMainWindow):
 
         # Mise à jour du graphique
         self.plot_graph()
+
+        # Créer la variable avec les tuples comme demandé
+        self.table_info = self.get_table_info()
+
+        # Afficher les informations dans le QTextEdit
+        self.update_table_info_display()
+
+    def get_table_info(self):
+        """Retourne les informations sous la forme d'une liste de tuples, y compris les valeurs fictives S et T."""
+        table_info = []
+        for i, row in enumerate(self.model._data):
+            # Ajouter la valeur fictive "S" pour chaque ligne
+            table_info.append(("S", self.model.row_labels[i], 0))
+            for j, value in enumerate(row):
+                # Ajouter la valeur de la table avec les indices de ligne et colonne
+                table_info.append((self.model.row_labels[i], self.model.col_labels[j], value))
+            # Ajouter la valeur fictive "T" pour chaque colonne
+            table_info.append((self.model.col_labels[j], "T", 0))
+        return table_info
+
+    def update_table_info_display(self):
+        """Met à jour l'affichage des informations de la table avec les valeurs fictives."""
+        table_info_text = "\n".join([f"({r}, {c}, {v})" for r, c, v in self.table_info])
+        self.table_info_display.setPlainText(table_info_text)
 
     def plot_graph(self):
         """Trace le graphique initial avec légende."""
@@ -147,6 +181,9 @@ class MainWindow(QMainWindow):
     def update_graph(self):
         """Met à jour le graphique lorsque les données changent."""
         self.plot_graph()
+        # Mettre à jour les informations de la table après modification
+        self.table_info = self.get_table_info()
+        self.update_table_info_display()
 
     def open_config_dialog(self):
         """Ouvre une fenêtre pop-up pour configurer le tableau."""
@@ -155,6 +192,7 @@ class MainWindow(QMainWindow):
             rows, cols = dialog.get_inputs()
             if rows and cols:  # Vérifie que les entrées ne sont pas vides
                 self.setup_table(rows, cols)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

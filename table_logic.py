@@ -3,6 +3,7 @@ import numpy as np
 from PyQt5.QtCore import Qt, QAbstractTableModel, pyqtSignal, QModelIndex  # Ajoute QModelIndex ici
 
 class MyTableModel(QAbstractTableModel):
+    
     dataChanged = pyqtSignal(QModelIndex, QModelIndex, list)
 
     def __init__(self, data, row_labels, col_labels):
