@@ -146,15 +146,20 @@ class MainWindow(QMainWindow):
     def get_table_info(self):
         """Retourne les informations sous la forme d'une liste de tuples, y compris les valeurs fictives S et T."""
         table_info = []
+        
+        # Connexions de "S" aux lignes et des lignes aux colonnes
         for i, row in enumerate(self.model._data):
-            # Ajouter la valeur fictive "S" pour chaque ligne
-            table_info.append(("S", self.model.row_labels[i], 0))
+            table_info.append(("S", self.model.row_labels[i], 0))  # Connexion fictive "S" -> ligne
+            
             for j, value in enumerate(row):
-                # Ajouter la valeur de la table avec les indices de ligne et colonne
-                table_info.append((self.model.row_labels[i], self.model.col_labels[j], value))
-            # Ajouter la valeur fictive "T" pour chaque colonne
-            table_info.append((self.model.col_labels[j], "T", 0))
+                table_info.append((self.model.row_labels[i], self.model.col_labels[j], value))  # Ligne -> Colonne
+        
+        # Connexions des colonnes vers "T" (une seule fois)
+        for col in self.model.col_labels:
+            table_info.append((col, "T", 0))  # Connexion unique pour chaque colonne
+
         return table_info
+
 
     def update_table_info_display(self):
         """Met à jour l'affichage des informations de la table avec les valeurs fictives."""
