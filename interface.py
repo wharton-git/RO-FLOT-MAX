@@ -72,6 +72,35 @@ class InputDialog(QDialog):
         cols = [x.strip() for x in self.col_input.text().split(",") if x.strip()]
         return rows, cols
 
+class FictiveValuesDialog(QDialog):
+    def __init__(self, row_labels, col_labels, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Définir les valeurs fictives")
+
+        self.layout = QFormLayout()
+        self.inputs = {}
+        
+        # Champs pour S -> A, S -> B, S -> C
+        for row in row_labels:
+            label = f"Valeur de S → {row} :"
+            self.inputs[("S", row)] = QLineEdit(self)
+            self.layout.addRow(label, self.inputs[("S", row)])
+
+        # Champs pour X -> T, Y -> T
+        for col in col_labels:
+            label = f"Valeur de {col} → T :"
+            self.inputs[(col, "T")] = QLineEdit(self)
+            self.layout.addRow(label, self.inputs[(col, "T")])
+
+        self.ok_button = QPushButton("OK", self)
+        self.ok_button.clicked.connect(self.accept)
+        self.layout.addWidget(self.ok_button)
+
+        self.setLayout(self.layout)
+
+    def get_fictive_values(self):
+        return {key: int(value.text()) if value.text().isdigit() else 0 for key, value in self.inputs.items()}
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -191,12 +220,26 @@ class MainWindow(QMainWindow):
         self.update_table_info_display()
 
     def open_config_dialog(self):
-        """Ouvre une fenêtre pop-up pour configurer le tableau."""
         dialog = InputDialog(self)
         if dialog.exec_():
             rows, cols = dialog.get_inputs()
-            if rows and cols:  # Vérifie que les entrées ne sont pas vides
+            if rows and cols:
                 self.setup_table(rows, cols)
+                self.open_fictive_values_dialog(rows, cols)
+
+    def open_fictive_values_dialog(self, row_labels, col_labels):
+        dialog = FictiveValuesDialog(row_labels, col_labels, self)
+        if dialog.exec_():
+            fictive_values = dialog.get_fictive_values()
+            
+            # Mettre à jour les valeurs existantes dans table_info
+            for (r, c), value in fictive_values.items():
+                for i, (row, col, v) in enumerate(self.table_info):
+                    if row == r and col == c:
+                        self.table_info[i] = (row, col, value)  # Mettre à jour la valeur existante
+            
+            # Mettre à jour l'affichage
+            self.update_table_info_display()
 
 
 if __name__ == '__main__':
