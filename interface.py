@@ -107,6 +107,8 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Tableau Dynamique avec Graphique")
 
+        self.fictive_values = {}  # Ajouter cet attribut pour stocker les valeurs fictives
+
         # Initialisation du splitter
         splitter = QSplitter(Qt.Horizontal)
 
@@ -142,6 +144,16 @@ class MainWindow(QMainWindow):
         # Maximiser la fenêtre
         self.showMaximized()
 
+    # Ajoutez cette méthode pour mettre à jour les valeurs fictives
+    def update_fictive_values(self, fictive_values):
+        """Met à jour les valeurs fictives en gardant la plus récente."""
+        for (r, c), value in fictive_values.items():
+            # Mettre à jour ou ajouter la nouvelle valeur (la plus récente)
+            self.fictive_values[(r, c)] = value
+
+        self.update_table_info_display()
+
+        
     def setup_table(self, row_labels, col_labels):
         """Initialise ou met à jour le tableau et le graphique."""
         self.row_labels = row_labels
@@ -189,7 +201,6 @@ class MainWindow(QMainWindow):
 
         return table_info
 
-
     def update_table_info_display(self):
         """Met à jour l'affichage des informations de la table avec les valeurs fictives."""
         table_info_text = "\n".join([f"({r}, {c}, {v})" for r, c, v in self.table_info])
@@ -213,11 +224,27 @@ class MainWindow(QMainWindow):
         self.canvas.draw()
 
     def update_graph(self):
-        """Met à jour le graphique lorsque les données changent."""
+        """Met à jour le graphique et les informations de la table."""
         self.plot_graph()
-        # Mettre à jour les informations de la table après modification
+
+        # Mise à jour de table_info
         self.table_info = self.get_table_info()
+
+        # Ajout des valeurs fictives en prenant la plus récente
+        for (r, c), v in self.fictive_values.items():
+            # Si la combinaison existe déjà dans table_info, on la met à jour avec la plus récente
+            for i, entry in enumerate(self.table_info):
+                if entry[0] == r and entry[1] == c:
+                    # Mise à jour directement dans table_info sans chercher par index
+                    self.table_info[i] = (r, c, v)  # Remplace l'entrée existante
+                    break
+            else:
+                # Si l'entrée n'existe pas, on l'ajoute
+                self.table_info.append((r, c, v))
+
+        # Mise à jour de l'affichage de table_info
         self.update_table_info_display()
+
 
     def open_config_dialog(self):
         dialog = InputDialog(self)
@@ -232,6 +259,9 @@ class MainWindow(QMainWindow):
         if dialog.exec_():
             fictive_values = dialog.get_fictive_values()
             
+            # Mettre à jour les valeurs fictives
+            self.update_fictive_values(fictive_values)
+        
             # Mettre à jour les valeurs existantes dans table_info
             for (r, c), value in fictive_values.items():
                 for i, (row, col, v) in enumerate(self.table_info):
