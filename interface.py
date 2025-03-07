@@ -168,6 +168,8 @@ class MainWindow(QMainWindow):
             
         print(f"Flot maximal: {max_flot}")
         print("Graphe des résidus:", [(d, f, resid_graph[d][f]['capacity']) for d, f in resid_graph.edges])
+        for d, f in G.edges():
+            print("Residus:", [(d, f, resid_graph[d][f]['capacity'])])
 
     # Ajoutez cette méthode pour mettre à jour les valeurs fictives
     def update_fictive_values(self, fictive_values):
