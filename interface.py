@@ -143,6 +143,31 @@ class MainWindow(QMainWindow):
 
         # Maximiser la fenêtre
         self.showMaximized()
+        
+    def display_table_info(self, table_info):
+        """Affiche les informations de la table dans la console."""
+        print("Informations de la table :")
+        for row, col, value in table_info:
+            print(f"({row}, {col}, {value})")
+    
+    def calcule_flot_max(self, table_info):
+        G = netx.DiGraph()
+        edge = []
+        for row, col, value in table_info:
+            edge.append((row, col, value))
+        for d, f, cap in edge:
+            G.add_edge(d, f, capacity=cap)
+
+        source = "S"
+        destination = "T"
+
+        max_flot, resid_graph = self.flot_max(G, source, destination)
+        # Affichage des flux sur chaque arc
+        for u, v in G.edges():
+            print(f"Flux de {u} → {v} : {resid_graph [u][v]} / {G[u][v]['capacity']}")
+            
+        print(f"Flot maximal: {max_flot}")
+        print("Graphe des résidus:", [(d, f, resid_graph[d][f]['capacity']) for d, f in resid_graph.edges])
 
     # Ajoutez cette méthode pour mettre à jour les valeurs fictives
     def update_fictive_values(self, fictive_values):
@@ -152,7 +177,6 @@ class MainWindow(QMainWindow):
             self.fictive_values[(r, c)] = value
 
         self.update_table_info_display()
-
         
     def setup_table(self, row_labels, col_labels):
         """Initialise ou met à jour le tableau et le graphique."""
@@ -244,6 +268,8 @@ class MainWindow(QMainWindow):
 
         # Mise à jour de l'affichage de table_info
         self.update_table_info_display()
+        self.display_table_info(self.table_info)
+        self.calcule_flot_max(self.table_info)
 
 
     def open_config_dialog(self):
@@ -270,6 +296,42 @@ class MainWindow(QMainWindow):
             
             # Mettre à jour l'affichage
             self.update_table_info_display()
+            
+            
+    #Algo de Ford-Fulkerson pour resoudre Flot-max        
+    def flot_max(self, graph, src, dst):
+        resid_graph = graph.copy()
+        max_flot = 0
+
+        def chemin_up(resid_graph, src, dst, chemin, visited):
+            if src == dst:
+                return chemin
+            visited.add(src)
+
+            for voisin in resid_graph.neighbors(src):
+                capacity = resid_graph[src][voisin]['capacity']
+                if voisin not in visited and capacity > 0:
+                    nouvelle_chemin = chemin_up(resid_graph, voisin, dst, chemin + [(src, voisin)], visited)
+                    if nouvelle_chemin:
+                        return nouvelle_chemin
+            return None
+        while True:
+            chemin = chemin_up(resid_graph, src, dst, [], set())
+            if not chemin:
+                break
+
+            limite_min = min(resid_graph[u][v]['capacity'] for u, v in chemin)
+            
+            for u, v in chemin:
+                resid_graph[u][v]['capacity'] -= limite_min
+                if resid_graph.has_edge(v, u):
+                    resid_graph[v][u]['capacity'] += limite_min
+                else:
+                    resid_graph.add_edge(v, u, capacity=limite_min)
+            
+            max_flot += limite_min
+        return max_flot, resid_graph
+
 
 
 if __name__ == '__main__':
