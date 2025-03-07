@@ -10,11 +10,18 @@ import networkx as netx
 class MyTableModel(QAbstractTableModel):
     dataChanged = pyqtSignal(QModelIndex, QModelIndex, list)
 
-    def __init__(self, data, row_labels, col_labels):
+    def __init__(self, data, row_labels, col_labels, s_values, t_values):
+        print("data", data)
+        print("row_labels", row_labels)
+        print("col_labels", col_labels)
+        print("s_values", s_values)
+        print("t_values", t_values)
         super().__init__()
         self._data = data
         self.row_labels = row_labels
         self.col_labels = col_labels
+        self.s_values = s_values 
+        self.t_values = t_values 
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
@@ -32,6 +39,7 @@ class MyTableModel(QAbstractTableModel):
             try:
                 # Convertir la valeur en entier
                 self._data[index.row()][index.column()] = int(value)
+                self.update_s_t_values()  # Mettre à jour les valeurs S et T après la modification
                 self.dataChanged.emit(index, index, [Qt.DisplayRole])
                 return True
             except ValueError:
@@ -48,6 +56,13 @@ class MyTableModel(QAbstractTableModel):
             elif orientation == Qt.Vertical:
                 return self.row_labels[section]
         return None
+
+    def update_s_t_values(self):
+        """Met à jour les valeurs S et T en fonction des données du tableau."""
+        for i, row in enumerate(self._data):
+            self.s_values[f"S-{self.row_labels[i]}"] = sum(row)  # Calculer la somme des lignes pour S
+        for j in range(len(self._data[0])):
+            self.t_values[f"{self.col_labels[j]}-T"] = sum(self._data[i][j] for i in range(len(self._data)))  # Calculer la somme des colonnes pour T
 
 class InputDialog(QDialog):
     def __init__(self, parent=None):
@@ -149,7 +164,12 @@ class MainWindow(QMainWindow):
 
         # Initialisation du tableau avec des valeurs à 0
         data = np.zeros((len(row_labels), len(col_labels)), dtype=int).tolist()
-        self.model = MyTableModel(data, row_labels, col_labels)
+        
+        # Si des valeurs S et T sont fournies, on les utilise
+        s_values = values if values else {f"S-{row}": 0 for row in row_labels}
+        t_values = values if values else {f"{col}-T": 0 for col in col_labels}
+
+        self.model = MyTableModel(data, row_labels, col_labels, s_values, t_values)
 
         # Création du QTableView
         if hasattr(self, "table_view"):  # Vérifie si le tableau existe déjà
@@ -178,12 +198,12 @@ class MainWindow(QMainWindow):
         if values:  # Si des valeurs ont été assignées, les utiliser
             for i, row in enumerate(self.model._data):
                 # Ajouter la valeur fictive "S" pour chaque ligne
-                table_info.append(("S", self.model.row_labels[i], values.get(f"S-{self.model.row_labels[i]}", 0)))
+                table_info.append(("S", self.model.row_labels[i], self.model.s_values.get(f"S-{self.model.row_labels[i]}", 0)))
                 for j, value in enumerate(row):
                     # Ajouter la valeur de la table avec les indices de ligne et colonne
                     table_info.append((self.model.row_labels[i], self.model.col_labels[j], value))
                 # Ajouter la valeur fictive "T" pour chaque colonne
-                table_info.append((self.model.col_labels[j], "T", values.get(f"{self.model.col_labels[j]}-T", 0)))
+                table_info.append((self.model.col_labels[j], "T", self.model.t_values.get(f"{self.model.col_labels[j]}-T", 0)))
         else:
             for i, row in enumerate(self.model._data):
                 # Ajouter la valeur fictive "S" pour chaque ligne
@@ -219,6 +239,7 @@ class MainWindow(QMainWindow):
 
     def update_graph(self):
         """Met à jour le graphique lorsque les données changent."""
+        self.model.update_s_t_values()  # Mettre à jour les valeurs S et T
         self.plot_graph()
         # Mettre à jour les informations de la table après modification
         self.table_info = self.get_table_info()
