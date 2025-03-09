@@ -34,42 +34,44 @@ def flot_max(graph, src, dst):
     return max_flot, resid_graph
 
 G = netx.DiGraph()
-# edge = [
-#     ('S', 'A', 10), ('S', 'B', 5), ('S', 'C', 15),
-#     ('A', 'B', 4), ('A', 'D', 9), ('A', 'E', 15),
-#     ('B', 'C', 4), ('B', 'E', 8),
-#     ('C', 'F', 16),
-#     ('D', 'E', 15), ('D', 'T', 10),
-#     ('E', 'F', 15), ('E', 'T', 10),
-#     ('F', 'T', 10)
-# ]
+edge = [
+    ('S', 'A', 45), ('S', 'B', 25), ('S', 'C', 30),
+    ('A', 'D', 10), ('A', 'E', 15), ('A', 'G', 20),
+    ('B', 'D', 20), ('B', 'E', 5), ('B', 'F', 15),
+    ('C', 'E', 10), ('C', 'G', 15),
+    ('D', 'T', 30),
+    ('E', 'T', 10),
+    ('F', 'T', 20),
+    ('G', 'T', 40)
+]
 
-# for d, f, cap in edge: #d = depart, f = fin, cap = capacite
-#     G.add_edge(d, f, capacity=cap)
 
-depots = {} 
-depots_input = input("Entrer les dépôts (ex: A B C) : ").split()
-for nom in depots_input:
-    capacite = int(input(f"Capacité du dépôt {nom} : "))
-    depots[nom] = capacite
-    G.add_edge("S", nom, capacity=capacite)
+for d, f, cap in edge: #d = depart, f = fin, cap = capacite
+    G.add_edge(d, f, capacity=cap)
 
-destinations = {}  
-destinations_input = input("Entrer les destinations (ex: X Y Z) : ").split()
-for nom in destinations_input:
-    capacite = int(input(f"Capacité de la destination {nom} : "))
-    destinations[nom] = capacite
-    G.add_edge(nom, "T", capacity=capacite)
+# depots = {} 
+# depots_input = input("Entrer les dépôts (ex: A B C) : ").split()
+# for nom in depots_input:
+#     capacite = int(input(f"Capacité du dépôt {nom} : "))
+#     depots[nom] = capacite
+#     G.add_edge("S", nom, capacity=capacite)
 
-print("Entrer les arcs (départ arrivée capacité), laisser vide pour terminer :")
-while True:
-    arc_input = input("Noeud de départ, arrivée et capacité (ex: A B 10) : ")
-    if not arc_input:
-        break
-    d, f, cap = arc_input.split()
-    cap = int(cap)
-    if cap > 0:
-        G.add_edge(d, f, capacity=cap)
+# destinations = {}  
+# destinations_input = input("Entrer les destinations (ex: X Y Z) : ").split()
+# for nom in destinations_input:
+#     capacite = int(input(f"Capacité de la destination {nom} : "))
+#     destinations[nom] = capacite
+#     G.add_edge(nom, "T", capacity=capacite)
+
+# print("Entrer les arcs (départ arrivée capacité), laisser vide pour terminer :")
+# while True:
+#     arc_input = input("Noeud de départ, arrivée et capacité (ex: A B 10) : ")
+#     if not arc_input:
+#         break
+#     d, f, cap = arc_input.split()
+#     cap = int(cap)
+#     if cap > 0:
+#         G.add_edge(d, f, capacity=cap)
 
 source, destination = "S", "T"
 max_flot, resid_graph = flot_max(G, source, destination)
