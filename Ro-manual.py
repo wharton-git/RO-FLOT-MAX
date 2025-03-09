@@ -16,12 +16,18 @@ def flot_max(graph, src, dst):
                 if nouvelle_chemin:
                     return nouvelle_chemin
         return None
+    
+    iteration = 1
     while True:
+        print(f"Iteration {iteration}:")
         chemin = chemin_up(resid_graph, src, dst, [], set())
         if not chemin:
+            print("Aucun chemin trouvé, arrêt de l'algorithme.")
             break
-
+        
+        print(f"Chemin trouvé: {chemin}")
         limite_min = min(resid_graph[u][v]['capacity'] for u, v in chemin)
+        print(f"Flot ajouté: {limite_min}")
         
         for u, v in chemin:
             resid_graph[u][v]['capacity'] -= limite_min
@@ -31,7 +37,18 @@ def flot_max(graph, src, dst):
                 resid_graph.add_edge(v, u, capacity=limite_min)
         
         max_flot += limite_min
+        iteration += 1
+    
     return max_flot, resid_graph
+
+def afficher_arcs_saturation(graph, resid_graph):
+    print("\nÉtat des arcs après exécution de l'algorithme:")
+    for u, v in graph.edges():
+        capacite_initiale = graph[u][v]['capacity']
+        capacite_residuelle = resid_graph[u][v]['capacity']
+        capacite_utilisée = capacite_initiale - capacite_residuelle
+        etat = "Saturé" if capacite_residuelle == 0 else "Non saturé"
+        print(f"{u} -> {v} (capacité utilisée: {capacite_utilisée}/{capacite_initiale}) - {etat}")
 
 G = netx.DiGraph()
 edge = [
@@ -45,35 +62,10 @@ edge = [
     ('G', 'T', 40)
 ]
 
-
-for d, f, cap in edge: #d = depart, f = fin, cap = capacite
+for d, f, cap in edge:
     G.add_edge(d, f, capacity=cap)
-
-# depots = {} 
-# depots_input = input("Entrer les dépôts (ex: A B C) : ").split()
-# for nom in depots_input:
-#     capacite = int(input(f"Capacité du dépôt {nom} : "))
-#     depots[nom] = capacite
-#     G.add_edge("S", nom, capacity=capacite)
-
-# destinations = {}  
-# destinations_input = input("Entrer les destinations (ex: X Y Z) : ").split()
-# for nom in destinations_input:
-#     capacite = int(input(f"Capacité de la destination {nom} : "))
-#     destinations[nom] = capacite
-#     G.add_edge(nom, "T", capacity=capacite)
-
-# print("Entrer les arcs (départ arrivée capacité), laisser vide pour terminer :")
-# while True:
-#     arc_input = input("Noeud de départ, arrivée et capacité (ex: A B 10) : ")
-#     if not arc_input:
-#         break
-#     d, f, cap = arc_input.split()
-#     cap = int(cap)
-#     if cap > 0:
-#         G.add_edge(d, f, capacity=cap)
 
 source, destination = "S", "T"
 max_flot, resid_graph = flot_max(G, source, destination)
-print(f"Flot maximal: {max_flot}")
-print("Graphe des résidus:", [(d, f, resid_graph[d][f]['capacity']) for d, f in resid_graph.edges])
+print(f"\nFlot maximal: {max_flot}\n")
+afficher_arcs_saturation(G, resid_graph)
